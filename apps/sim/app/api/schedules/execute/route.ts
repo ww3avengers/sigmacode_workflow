@@ -588,7 +588,7 @@ export async function GET() {
                 .where(eq(workflow.id, schedule.workflowId))
                 .limit(1)
 
-              if (workflowRecord && workflowRecord.isDeployed) {
+              if (workflowRecord?.isDeployed) {
                 try {
                   const deployedData = await loadDeployedWorkflowState(schedule.workflowId)
                   nextRunAt = calculateNextRunTime(schedule, deployedData.blocks as any)
