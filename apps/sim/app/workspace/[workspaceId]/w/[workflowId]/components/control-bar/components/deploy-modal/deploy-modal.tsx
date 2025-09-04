@@ -437,34 +437,33 @@ export function DeployModal({
   }
 
   const handleWorkflowPreDeploy = async () => {
-    if (!isDeployed) {
-      const response = await fetch(`/api/workflows/${workflowId}/deploy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          deployApiEnabled: true,
-          deployChatEnabled: false,
-        }),
-      })
+    // Always deploy to ensure a new deployment version exists
+    const response = await fetch(`/api/workflows/${workflowId}/deploy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        deployApiEnabled: true,
+        deployChatEnabled: false,
+      }),
+    })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to deploy workflow')
-      }
-
-      const { isDeployed: newDeployStatus, deployedAt, apiKey } = await response.json()
-
-      setDeploymentStatus(
-        workflowId,
-        newDeployStatus,
-        deployedAt ? new Date(deployedAt) : undefined,
-        apiKey
-      )
-
-      setDeploymentInfo((prev) => (prev ? { ...prev, apiKey } : null))
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to deploy workflow')
     }
+
+    const { isDeployed: newDeployStatus, deployedAt, apiKey } = await response.json()
+
+    setDeploymentStatus(
+      workflowId,
+      newDeployStatus,
+      deployedAt ? new Date(deployedAt) : undefined,
+      apiKey
+    )
+
+    setDeploymentInfo((prev) => (prev ? { ...prev, apiKey } : null))
   }
 
   const handleChatFormSubmit = () => {
@@ -668,6 +667,13 @@ export function DeployModal({
                   onValidationChange={setIsChatFormValid}
                   onPreDeployWorkflow={handleWorkflowPreDeploy}
                   onDeploymentComplete={handleCloseModal}
+                  onDeployed={async () => {
+                    await refetchDeployedState()
+                    await fetchVersions()
+                    if (workflowId) {
+                      useWorkflowRegistry.getState().setWorkflowNeedsRedeployment(workflowId, false)
+                    }
+                  }}
                 />
               )}
             </div>
