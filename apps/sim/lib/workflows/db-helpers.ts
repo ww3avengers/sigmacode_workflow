@@ -1,7 +1,12 @@
-import { eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { createLogger } from '@/lib/logs/console/logger'
 import { db } from '@/db'
-import { workflow, workflowBlocks, workflowEdges, workflowSubflows } from '@/db/schema'
+import {
+  workflowBlocks,
+  workflowDeploymentVersion,
+  workflowEdges,
+  workflowSubflows,
+} from '@/db/schema'
 import type { WorkflowState } from '@/stores/workflows/workflow/types'
 import { SUBFLOW_TYPES } from '@/stores/workflows/workflow/types'
 
@@ -23,33 +28,33 @@ export async function loadDeployedWorkflowState(
   workflowId: string
 ): Promise<NormalizedWorkflowData> {
   try {
-    // First check if workflow is deployed and get deployed state
-    const [workflowResult] = await db
+    const [active] = await db
       .select({
-        isDeployed: workflow.isDeployed,
-        deployedState: workflow.deployedState,
+        state: workflowDeploymentVersion.state,
+        createdAt: workflowDeploymentVersion.createdAt,
       })
-      .from(workflow)
-      .where(eq(workflow.id, workflowId))
+      .from(workflowDeploymentVersion)
+      .where(
+        and(
+          eq(workflowDeploymentVersion.workflowId, workflowId),
+          eq(workflowDeploymentVersion.isActive, true)
+        )
+      )
+      .orderBy(desc(workflowDeploymentVersion.createdAt))
       .limit(1)
 
-    if (!workflowResult) {
-      throw new Error(`Workflow ${workflowId} not found`)
+    if (!active?.state) {
+      throw new Error(`Workflow ${workflowId} has no active deployment`)
     }
 
-    if (!workflowResult.isDeployed || !workflowResult.deployedState) {
-      throw new Error(`Workflow ${workflowId} is not deployed or has no deployed state`)
-    }
+    const state = active.state as any
 
-    const deployedState = workflowResult.deployedState as any
-
-    // Convert deployed state to normalized format
     return {
-      blocks: deployedState.blocks || {},
-      edges: deployedState.edges || [],
-      loops: deployedState.loops || {},
-      parallels: deployedState.parallels || {},
-      isFromNormalizedTables: false, // Flag to indicate this came from deployed state
+      blocks: state.blocks || {},
+      edges: state.edges || [],
+      loops: state.loops || {},
+      parallels: state.parallels || {},
+      isFromNormalizedTables: false,
     }
   } catch (error) {
     logger.error(`Error loading deployed workflow state ${workflowId}:`, error)

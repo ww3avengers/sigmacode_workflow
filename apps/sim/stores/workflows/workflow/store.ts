@@ -964,12 +964,15 @@ export const useWorkflowStore = create<WorkflowStoreWithHistory>()(
 
         // Call API to persist the revert to normalized tables
         try {
-          const response = await fetch(`/api/workflows/${activeWorkflowId}/revert-to-deployed`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
+          const response = await fetch(
+            `/api/workflows/${activeWorkflowId}/deployments/active/revert`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          )
 
           if (!response.ok) {
             const errorData = await response.json()
