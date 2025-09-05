@@ -3,17 +3,11 @@ import type { NextRequest } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { createLogger } from '@/lib/logs/console/logger'
 import { generateApiKey } from '@/lib/utils'
+import { loadWorkflowFromNormalizedTables } from '@/lib/workflows/db-helpers'
 import { validateWorkflowAccess } from '@/app/api/workflows/middleware'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 import { db } from '@/db'
-import {
-  apiKey,
-  workflow,
-  workflowBlocks,
-  workflowDeploymentVersion,
-  workflowEdges,
-  workflowSubflows,
-} from '@/db/schema'
+import { apiKey, workflow, workflowDeploymentVersion } from '@/db/schema'
 
 const logger = createLogger('WorkflowDeployAPI')
 
@@ -184,85 +178,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // Body may be empty; ignore
     }
 
-    // Get the current live state from normalized tables instead of stale JSON
+    // Get the current live state from normalized tables using centralized helper
     logger.debug(`[${requestId}] Getting current workflow state for deployment`)
 
-    // Get blocks from normalized table
-    const blocks = await db.select().from(workflowBlocks).where(eq(workflowBlocks.workflowId, id))
+    const normalizedData = await loadWorkflowFromNormalizedTables(id)
 
-    // Get edges from normalized table
-    const edges = await db.select().from(workflowEdges).where(eq(workflowEdges.workflowId, id))
-
-    // Get subflows from normalized table
-    const subflows = await db
-      .select()
-      .from(workflowSubflows)
-      .where(eq(workflowSubflows.workflowId, id))
-
-    // Build current state from normalized data
-    const blocksMap: Record<string, any> = {}
-    const loops: Record<string, any> = {}
-    const parallels: Record<string, any> = {}
-
-    // Process blocks
-    blocks.forEach((block) => {
-      blocksMap[block.id] = {
-        id: block.id,
-        type: block.type,
-        name: block.name,
-        position: { x: Number(block.positionX), y: Number(block.positionY) },
-        data: block.data || {},
-        enabled: block.enabled,
-        subBlocks: block.subBlocks || {},
-      }
-    })
-
-    // Process subflows (loops and parallels)
-    subflows.forEach((subflow) => {
-      const config = (subflow.config as any) || {}
-      if (subflow.type === 'loop') {
-        loops[subflow.id] = {
-          id: subflow.id,
-          nodes: config.nodes || [],
-          iterations: config.iterations || 1,
-          loopType: config.loopType || 'for',
-          forEachItems: config.forEachItems || '',
-        }
-      } else if (subflow.type === 'parallel') {
-        parallels[subflow.id] = {
-          id: subflow.id,
-          nodes: config.nodes || [],
-          count: config.count || 2,
-          distribution: config.distribution || '',
-          parallelType: config.parallelType || 'count',
-        }
-      }
-    })
-
-    // Convert edges to the expected format
-    const edgesArray = edges.map((edge) => ({
-      id: edge.id,
-      source: edge.sourceBlockId,
-      target: edge.targetBlockId,
-      sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle,
-      type: 'default',
-      data: {},
-    }))
+    if (!normalizedData) {
+      logger.error(`[${requestId}] Failed to load workflow from normalized tables`)
+      return createErrorResponse('Failed to load workflow state', 500)
+    }
 
     const currentState = {
-      blocks: blocksMap,
-      edges: edgesArray,
-      loops,
-      parallels,
+      blocks: normalizedData.blocks,
+      edges: normalizedData.edges,
+      loops: normalizedData.loops,
+      parallels: normalizedData.parallels,
       lastSaved: Date.now(),
     }
 
     logger.debug(`[${requestId}] Current state retrieved from normalized tables:`, {
-      blocksCount: Object.keys(blocksMap).length,
-      edgesCount: edgesArray.length,
-      loopsCount: Object.keys(loops).length,
-      parallelsCount: Object.keys(parallels).length,
+      blocksCount: Object.keys(currentState.blocks).length,
+      edgesCount: currentState.edges.length,
+      loopsCount: Object.keys(currentState.loops).length,
+      parallelsCount: Object.keys(currentState.parallels).length,
     })
 
     if (!currentState || !currentState.blocks) {
