@@ -53,7 +53,6 @@ async function loadWorkflowFromNormalizedTables(workflowId: string): Promise<Wor
         height: Number.parseFloat(block.height),
         parentId: block.parentId,
         extent: block.extent,
-        subflows: [],
       }
     }
 
