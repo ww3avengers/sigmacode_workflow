@@ -32,6 +32,7 @@ export const useGeneralStore = create<GeneralStore>()(
           isConsoleExpandedByDefaultLoading: false,
           isThemeLoading: false, // Keep for compatibility but not used
           isTelemetryLoading: false,
+          // usage notification preference (undefined means enabled by default)
         }
 
         // Optimistic update helper
@@ -131,6 +132,15 @@ export const useGeneralStore = create<GeneralStore>()(
               'isTelemetryLoading',
               'telemetryEnabled'
             )
+          },
+
+          // Billing usage notifications toggle (stored as dedicated column)
+          setBillingUsageNotificationsEnabled: async (enabled: boolean) => {
+            try {
+              await get().updateSetting('billingUsageNotificationsEnabled' as any, enabled as any)
+            } catch (error) {
+              logger.error('Failed to update billing usage notifications preference', error)
+            }
           },
 
           // API Actions
