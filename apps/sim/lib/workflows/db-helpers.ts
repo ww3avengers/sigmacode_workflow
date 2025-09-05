@@ -1,3 +1,4 @@
+import type { InferSelectModel } from 'drizzle-orm'
 import { and, desc, eq } from 'drizzle-orm'
 import { createLogger } from '@/lib/logs/console/logger'
 import { db } from '@/db'
@@ -11,6 +12,18 @@ import type { WorkflowState } from '@/stores/workflows/workflow/types'
 import { SUBFLOW_TYPES } from '@/stores/workflows/workflow/types'
 
 const logger = createLogger('WorkflowDBHelpers')
+
+// Database types
+export type WorkflowDeploymentVersion = InferSelectModel<typeof workflowDeploymentVersion>
+
+// API response types (dates are serialized as strings)
+export interface WorkflowDeploymentVersionResponse {
+  id: string
+  version: number
+  isActive: boolean
+  createdAt: string
+  createdBy?: string | null
+}
 
 export interface NormalizedWorkflowData {
   blocks: Record<string, any>

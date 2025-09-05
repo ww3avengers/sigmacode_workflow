@@ -6,6 +6,7 @@ import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/comp
 import { getEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logs/console/logger'
 import { cn } from '@/lib/utils'
+import type { WorkflowDeploymentVersionResponse } from '@/lib/workflows/db-helpers'
 import {
   DeployForm,
   DeploymentInfo,
@@ -82,14 +83,7 @@ export function DeployModal({
   const [chatExists, setChatExists] = useState(false)
   const [isChatFormValid, setIsChatFormValid] = useState(false)
 
-  interface DeploymentVersion {
-    id: string
-    version: number
-    isActive: boolean
-    createdAt: string
-    createdBy?: string | null
-  }
-  const [versions, setVersions] = useState<DeploymentVersion[]>([])
+  const [versions, setVersions] = useState<WorkflowDeploymentVersionResponse[]>([])
   const [versionsLoading, setVersionsLoading] = useState(false)
   const [activatingVersion, setActivatingVersion] = useState<number | null>(null)
   const [previewVersion, setPreviewVersion] = useState<number | null>(null)

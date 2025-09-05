@@ -94,7 +94,9 @@ export async function POST(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workflowId: id, timestamp: Date.now() }),
       })
-    } catch (e) {}
+    } catch (e) {
+      logger.error('Error sending workflow reverted event to socket server', e)
+    }
 
     return createSuccessResponse({
       message: 'Reverted to deployment version',
