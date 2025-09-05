@@ -37,11 +37,22 @@ async function loadWorkflowFromNormalizedTables(workflowId: string): Promise<Wor
       blocksMap[block.id] = {
         id: block.id,
         type: block.type,
+        name: block.name,
         position: {
           x: Number.parseFloat(block.positionX),
           y: Number.parseFloat(block.positionY),
         },
         data: block.data || {},
+        subBlocks: block.subBlocks || {}, // CRITICAL: This contains system prompts and other subblock values!
+        outputs: block.outputs || {},
+        enabled: block.enabled,
+        horizontalHandles: block.horizontalHandles,
+        isWide: block.isWide,
+        advancedMode: block.advancedMode,
+        triggerMode: block.triggerMode,
+        height: Number.parseFloat(block.height),
+        parentId: block.parentId,
+        extent: block.extent,
         subflows: [],
       }
     }
