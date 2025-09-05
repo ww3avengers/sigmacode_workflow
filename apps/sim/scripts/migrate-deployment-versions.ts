@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { eq, sql } from 'drizzle-orm'
+import type { Edge } from 'reactflow'
 import { v4 as uuidv4 } from 'uuid'
 import { db } from '../db'
 import {
@@ -10,16 +11,10 @@ import {
   workflowEdges,
   workflowSubflows,
 } from '../db/schema'
+import type { BlockState, Loop, Parallel, WorkflowState } from '../stores/workflows/workflow/types'
 
 const DRY_RUN = process.argv.includes('--dry-run')
 const BATCH_SIZE = 50
-
-interface WorkflowState {
-  blocks: Record<string, any>
-  edges: Array<{ id: string; source: string; target: string; [key: string]: any }>
-  loops?: Record<string, any>
-  parallels?: Record<string, any>
-}
 
 async function loadWorkflowFromNormalizedTables(workflowId: string): Promise<WorkflowState | null> {
   try {
@@ -29,9 +24,9 @@ async function loadWorkflowFromNormalizedTables(workflowId: string): Promise<Wor
       db.select().from(workflowSubflows).where(eq(workflowSubflows.workflowId, workflowId)),
     ])
 
-    const blocksMap: Record<string, any> = {}
-    const loops: Record<string, any> = {}
-    const parallels: Record<string, any> = {}
+    const blocksMap: Record<string, BlockState> = {}
+    const loops: Record<string, Loop> = {}
+    const parallels: Record<string, Parallel> = {}
 
     for (const block of blocks) {
       blocksMap[block.id] = {
@@ -51,27 +46,39 @@ async function loadWorkflowFromNormalizedTables(workflowId: string): Promise<Wor
         advancedMode: block.advancedMode,
         triggerMode: block.triggerMode,
         height: Number.parseFloat(block.height),
-        parentId: block.parentId,
-        extent: block.extent,
-      }
+      } as BlockState
     }
 
     for (const subflow of subflows) {
       // Subflows are stored differently - they represent loops and parallels
       // We need to associate them with their parent blocks
       if (subflow.type === 'loop' && subflow.config) {
-        loops[subflow.id] = subflow.config
+        loops[subflow.id] = {
+          nodes: (subflow.config as any).nodes || [],
+          iterations: (subflow.config as any).iterations || 1,
+          loopType: (subflow.config as any).loopType || 'sequential',
+          forEachItems: (subflow.config as any).forEachItems || '',
+          ...((subflow.config as any) || {}),
+        }
       } else if (subflow.type === 'parallel' && subflow.config) {
-        parallels[subflow.id] = subflow.config
+        parallels[subflow.id] = {
+          nodes: (subflow.config as any).nodes || [],
+          count: (subflow.config as any).count || 1,
+          distribution: (subflow.config as any).distribution || 'even',
+          parallelType: (subflow.config as any).parallelType || 'static',
+          ...((subflow.config as any) || {}),
+        }
       }
     }
 
-    const edgesArray = edges.map((edge) => ({
+    const edgesArray: Edge[] = edges.map((edge) => ({
       id: edge.id,
       source: edge.sourceBlockId,
       target: edge.targetBlockId,
-      sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle,
+      sourceHandle: edge.sourceHandle || undefined,
+      targetHandle: edge.targetHandle || undefined,
+      type: 'default',
+      data: {},
     }))
 
     return {

@@ -392,12 +392,14 @@ export const useWorkflowStore = create<WorkflowStoreWithHistory>()(
           return
         }
 
-        const newEdge = {
+        const newEdge: Edge = {
           id: edge.id || crypto.randomUUID(),
           source: edge.source,
           target: edge.target,
           sourceHandle: edge.sourceHandle,
           targetHandle: edge.targetHandle,
+          type: edge.type || 'default',
+          data: edge.data || {},
         }
 
         const newEdges = [...get().edges, newEdge]

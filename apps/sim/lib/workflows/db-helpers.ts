@@ -1,5 +1,6 @@
 import type { InferSelectModel } from 'drizzle-orm'
 import { and, desc, eq } from 'drizzle-orm'
+import type { Edge } from 'reactflow'
 import { createLogger } from '@/lib/logs/console/logger'
 import { db } from '@/db'
 import {
@@ -8,7 +9,7 @@ import {
   workflowEdges,
   workflowSubflows,
 } from '@/db/schema'
-import type { WorkflowState } from '@/stores/workflows/workflow/types'
+import type { BlockState, Loop, Parallel, WorkflowState } from '@/stores/workflows/workflow/types'
 import { SUBFLOW_TYPES } from '@/stores/workflows/workflow/types'
 
 const logger = createLogger('WorkflowDBHelpers')
@@ -26,10 +27,10 @@ export interface WorkflowDeploymentVersionResponse {
 }
 
 export interface NormalizedWorkflowData {
-  blocks: Record<string, any>
-  edges: any[]
-  loops: Record<string, any>
-  parallels: Record<string, any>
+  blocks: Record<string, BlockState>
+  edges: Edge[]
+  loops: Record<string, Loop>
+  parallels: Record<string, Parallel>
   isFromNormalizedTables: boolean // Flag to indicate source (true = normalized tables, false = deployed state)
 }
 
@@ -60,7 +61,7 @@ export async function loadDeployedWorkflowState(
       throw new Error(`Workflow ${workflowId} has no active deployment`)
     }
 
-    const state = active.state as any
+    const state = active.state as WorkflowState
 
     return {
       blocks: state.blocks || {},
@@ -96,20 +97,11 @@ export async function loadWorkflowFromNormalizedTables(
     }
 
     // Convert blocks to the expected format
-    const blocksMap: Record<string, any> = {}
+    const blocksMap: Record<string, BlockState> = {}
     blocks.forEach((block) => {
-      // Get parentId and extent from the database columns (primary source)
-      const parentId = block.parentId || null
-      const extent = block.extent || null
+      const blockData = block.data || {}
 
-      // Merge data with parent info for backward compatibility
-      const blockData = {
-        ...(block.data || {}),
-        ...(parentId && { parentId }),
-        ...(extent && { extent }),
-      }
-
-      blocksMap[block.id] = {
+      const assembled: BlockState = {
         id: block.id,
         type: block.type,
         name: block.name,
@@ -123,41 +115,58 @@ export async function loadWorkflowFromNormalizedTables(
         advancedMode: block.advancedMode,
         triggerMode: block.triggerMode,
         height: Number(block.height),
-        subBlocks: block.subBlocks || {},
-        outputs: block.outputs || {},
+        subBlocks: (block.subBlocks as BlockState['subBlocks']) || {},
+        outputs: (block.outputs as BlockState['outputs']) || {},
         data: blockData,
-        // Set parentId and extent at the block level for ReactFlow
-        parentId,
-        extent,
       }
+
+      blocksMap[block.id] = assembled
     })
 
     // Convert edges to the expected format
-    const edgesArray = edges.map((edge) => ({
+    const edgesArray: Edge[] = edges.map((edge) => ({
       id: edge.id,
       source: edge.sourceBlockId,
       target: edge.targetBlockId,
-      sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle,
+      sourceHandle: edge.sourceHandle ?? undefined,
+      targetHandle: edge.targetHandle ?? undefined,
+      type: 'default',
+      data: {},
     }))
 
     // Convert subflows to loops and parallels
-    const loops: Record<string, any> = {}
-    const parallels: Record<string, any> = {}
+    const loops: Record<string, Loop> = {}
+    const parallels: Record<string, Parallel> = {}
 
     subflows.forEach((subflow) => {
-      const config = subflow.config || {}
+      const config = (subflow.config ?? {}) as Partial<Loop & Parallel>
 
       if (subflow.type === SUBFLOW_TYPES.LOOP) {
-        loops[subflow.id] = {
+        const loop: Loop = {
           id: subflow.id,
-          ...config,
+          nodes: Array.isArray((config as Loop).nodes) ? (config as Loop).nodes : [],
+          iterations:
+            typeof (config as Loop).iterations === 'number' ? (config as Loop).iterations : 1,
+          loopType:
+            (config as Loop).loopType === 'for' || (config as Loop).loopType === 'forEach'
+              ? (config as Loop).loopType
+              : 'for',
+          forEachItems: (config as Loop).forEachItems ?? '',
         }
+        loops[subflow.id] = loop
       } else if (subflow.type === SUBFLOW_TYPES.PARALLEL) {
-        parallels[subflow.id] = {
+        const parallel: Parallel = {
           id: subflow.id,
-          ...config,
+          nodes: Array.isArray((config as Parallel).nodes) ? (config as Parallel).nodes : [],
+          count: typeof (config as Parallel).count === 'number' ? (config as Parallel).count : 2,
+          distribution: (config as Parallel).distribution ?? '',
+          parallelType:
+            (config as Parallel).parallelType === 'count' ||
+            (config as Parallel).parallelType === 'collection'
+              ? (config as Parallel).parallelType
+              : 'count',
         }
+        parallels[subflow.id] = parallel
       } else {
         logger.warn(`Unknown subflow type: ${subflow.type} for subflow ${subflow.id}`)
       }

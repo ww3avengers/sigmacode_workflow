@@ -211,7 +211,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         type: block.type,
         name: block.name,
         position: { x: Number(block.positionX), y: Number(block.positionY) },
-        data: block.data,
+        data: block.data || {},
         enabled: block.enabled,
         subBlocks: block.subBlocks || {},
       }
