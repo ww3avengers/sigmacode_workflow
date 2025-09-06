@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ChevronDown, RefreshCw, X } from 'lucide-react'
+import { Check, ChevronDown, RefreshCw, ShieldCheck, X } from 'lucide-react'
 import { DiscordIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import {
@@ -192,6 +192,12 @@ export function DiscordServerSelector({
     setError(null)
   }
 
+  // Validate button handler to refetch the current serverId explicitly
+  const handleValidate = async () => {
+    if (!botToken || !selectedServerId) return
+    await fetchSelectedServerInfo()
+  }
+
   return (
     <div className='space-y-2'>
       <Popover open={open} onOpenChange={handleOpenChange}>
@@ -315,6 +321,18 @@ export function DiscordServerSelector({
             <div className='min-w-0 flex-1 overflow-hidden'>
               <h4 className='truncate font-medium text-xs'>{selectedServer.name}</h4>
               <div className='text-muted-foreground text-xs'>Server ID: {selectedServer.id}</div>
+            </div>
+            <div className='ml-auto flex items-center gap-2'>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleValidate}
+                disabled={!selectedServerId || !botToken}
+                className='h-6 px-2 text-xs'
+                title='Validate server'
+              >
+                <ShieldCheck className='mr-1 h-3 w-3' /> Validate
+              </Button>
             </div>
           </div>
         </div>

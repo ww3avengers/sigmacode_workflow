@@ -33,16 +33,9 @@ export const readChatTool: ToolConfig<MicrosoftTeamsToolParams, MicrosoftTeamsRe
 
   request: {
     url: (params) => {
-      // Debug logging
-      console.log('Microsoft Teams read_chat tool received params:', params)
-
       // Ensure chatId is valid
       const chatId = params.chatId?.trim()
       if (!chatId) {
-        console.error('Chat ID missing in tool params:', {
-          chatId: params.chatId,
-          allParams: params,
-        })
         throw new Error('Chat ID is required')
       }
       // Fetch the most recent messages from the chat
