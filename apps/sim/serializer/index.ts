@@ -22,6 +22,7 @@ function doesConditionMatch(
   params: Record<string, any>
 ): boolean {
   const cond = typeof condition === 'function' ? condition() : condition
+
   const primaryMatches = cond.not
     ? params[cond.field] !== cond.value
     : Array.isArray(cond.value)
@@ -76,19 +77,6 @@ function consolidateCanonicalParams(
     const advancedVal = advancedIds
       .map((id) => consolidated[id])
       .find((v) => v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0))
-
-    // Debug logging for Teams chat issue
-    if (canonicalKey === 'chatId' || canonicalKey === 'teamId' || canonicalKey === 'channelId') {
-      console.log('Consolidation debug:', {
-        canonicalKey,
-        basicId,
-        advancedIds,
-        basicVal,
-        advancedVal,
-        isAdvancedMode,
-        consolidated,
-      })
-    }
 
     let chosen: any
     if (advancedVal !== undefined && basicVal !== undefined) {
@@ -340,40 +328,52 @@ export class Serializer {
     const params: Record<string, any> = {}
     const isAdvancedMode = block.advancedMode ?? false
 
-    Object.entries(block.subBlocks).forEach(([id, subBlock]) => {
-      const subBlockConfig = blockConfig.subBlocks.find((config) => config.id === id)
-      if (!subBlockConfig) return
+    // Build a list of subblocks with their configs to allow dependency-aware extraction
+    const entries = Object.entries(block.subBlocks)
+      .map(([id, subBlock]) => ({
+        id,
+        subBlock,
+        config: blockConfig.subBlocks.find((c) => c.id === id),
+      }))
+      .filter((e) => !!e.config) as { id: string; subBlock: any; config: SubBlockConfig }[]
 
-      // Debug logging for Teams issue
-      if (id === 'chatId' || id === 'manualChatId' || id === 'teamId' || id === 'channelId') {
-        console.log('ExtractParams processing:', {
-          id,
-          value: subBlock.value,
-          condition: subBlockConfig.condition,
-          currentParams: params,
-          conditionMatch: subBlockConfig.condition
-            ? doesConditionMatch(subBlockConfig.condition, params)
-            : 'no condition',
-        })
-      }
-
-      // Respect conditional visibility: if condition exists and doesn't match current params, skip
-      if (subBlockConfig.condition && !doesConditionMatch(subBlockConfig.condition, params)) {
-        return
-      }
-
-      const v = subBlock.value
-      const hasValue = !(
+    const valueIsSet = (v: any) =>
+      !(
         v === null ||
         v === undefined ||
         (typeof v === 'string' && v.trim().length === 0) ||
         (Array.isArray(v) && v.length === 0) ||
         (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0)
       )
-      if (hasValue) {
-        params[id] = v
+
+    // First, process entries without conditions
+    entries
+      .filter((e) => !e.config.condition)
+      .forEach((e) => {
+        const v = e.subBlock.value
+        if (valueIsSet(v)) {
+          params[e.id] = v
+        }
+      })
+
+    // Then iteratively process conditional entries once their conditions are satisfied
+    let progress = true
+    const pending = entries.filter((e) => !!e.config.condition)
+    while (progress && pending.length > 0) {
+      progress = false
+      for (let i = pending.length - 1; i >= 0; i -= 1) {
+        const e = pending[i]
+        if (e.config.condition && !doesConditionMatch(e.config.condition, params)) {
+          continue
+        }
+        const v = e.subBlock.value
+        if (valueIsSet(v)) {
+          params[e.id] = v
+        }
+        pending.splice(i, 1)
+        progress = true
       }
-    })
+    }
 
     // Then check for any subBlocks with default values
     blockConfig.subBlocks.forEach((subBlockConfig) => {

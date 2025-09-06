@@ -166,9 +166,6 @@ export const MicrosoftTeamsBlock: BlockConfig<MicrosoftTeamsResponse> = {
         }
       },
       params: (params) => {
-        // Debug logging
-        console.log('Microsoft Teams mapper received params:', params)
-
         const {
           credential,
           operation,
@@ -186,19 +183,16 @@ export const MicrosoftTeamsBlock: BlockConfig<MicrosoftTeamsResponse> = {
         const effectiveChatId = (chatId || manualChatId || '').trim()
         const effectiveChannelId = (channelId || manualChannelId || '').trim()
 
-        console.log('Microsoft Teams mapper computed:', {
-          effectiveTeamId,
-          effectiveChatId,
-          effectiveChannelId,
-          operation,
-        })
-
         const baseParams = {
           ...rest,
           credential,
         }
 
         if (operation === 'read_chat' || operation === 'write_chat') {
+          // Don't pass empty chatId - let the tool handle the error
+          if (!effectiveChatId) {
+            throw new Error('Chat ID is required. Please select a chat or enter a chat ID.')
+          }
           return { ...baseParams, chatId: effectiveChatId }
         }
 
