@@ -144,7 +144,7 @@ export const JiraBlock: BlockConfig<JiraResponse> = {
         const { credential, projectId, issueKey, ...rest } = params
 
         const baseParams = {
-          accessToken: credential,
+          credential,
           domain: params.domain,
         }
 

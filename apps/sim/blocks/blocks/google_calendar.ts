@@ -260,7 +260,7 @@ export const GoogleCalendarBlock: BlockConfig<GoogleCalendarResponse> = {
         }
 
         return {
-          accessToken: credential,
+          credential,
           ...processedParams,
         }
       },

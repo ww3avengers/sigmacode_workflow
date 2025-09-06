@@ -126,7 +126,7 @@ export const SharepointBlock: BlockConfig<SharepointResponse> = {
         const { credential, siteId, mimeType, ...rest } = params
 
         return {
-          accessToken: credential,
+          credential,
           siteId: siteId ? String(siteId).trim() : undefined,
           pageSize: rest.pageSize ? Number.parseInt(rest.pageSize as string, 10) : undefined,
           mimeType: mimeType,

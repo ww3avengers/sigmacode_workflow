@@ -113,7 +113,7 @@ export const ConfluenceBlock: BlockConfig<ConfluenceResponse> = {
         }
 
         return {
-          accessToken: credential,
+          credential,
           pageId: effectivePageId,
           ...rest,
         }

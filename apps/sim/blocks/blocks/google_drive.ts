@@ -236,7 +236,7 @@ export const GoogleDriveBlock: BlockConfig<GoogleDriveResponse> = {
         const { credential, folderId, mimeType, ...rest } = params
 
         return {
-          accessToken: credential,
+          credential,
           folderId: folderId ? String(folderId).trim() : undefined,
           pageSize: rest.pageSize ? Number.parseInt(rest.pageSize as string, 10) : undefined,
           mimeType: mimeType,

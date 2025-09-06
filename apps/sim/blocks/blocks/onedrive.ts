@@ -207,8 +207,8 @@ export const OneDriveBlock: BlockConfig<OneDriveResponse> = {
         const { credential, folderId, mimeType, ...rest } = params
 
         return {
+          credential,
           ...rest,
-          accessToken: credential,
           folderId: folderId ? String(folderId).trim() : undefined,
           pageSize: rest.pageSize ? Number.parseInt(rest.pageSize as string, 10) : undefined,
           mimeType: mimeType,
