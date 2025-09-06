@@ -17,6 +17,29 @@ function shouldIncludeField(subBlockConfig: SubBlockConfig, isAdvancedMode: bool
   return true
 }
 
+function doesConditionMatch(
+  condition: NonNullable<SubBlockConfig['condition']>,
+  params: Record<string, any>
+): boolean {
+  const cond = typeof condition === 'function' ? condition() : condition
+  const primaryMatches = cond.not
+    ? params[cond.field] !== cond.value
+    : Array.isArray(cond.value)
+      ? cond.value.includes(params[cond.field])
+      : params[cond.field] === cond.value
+
+  if (!cond.and) return !!primaryMatches
+
+  const andCond = cond.and
+  const andMatches = andCond.not
+    ? params[andCond.field] !== andCond.value
+    : Array.isArray(andCond.value)
+      ? (andCond.value as any[]).includes(params[andCond.field])
+      : params[andCond.field] === andCond.value
+
+  return !!primaryMatches && !!andMatches
+}
+
 function consolidateCanonicalParams(
   params: Record<string, any>,
   blockConfig: { subBlocks: SubBlockConfig[] },
@@ -306,6 +329,12 @@ export class Serializer {
     Object.entries(block.subBlocks).forEach(([id, subBlock]) => {
       const subBlockConfig = blockConfig.subBlocks.find((config) => config.id === id)
       if (!subBlockConfig) return
+
+      // Respect conditional visibility: if condition exists and doesn't match current params, skip
+      if (subBlockConfig.condition && !doesConditionMatch(subBlockConfig.condition, params)) {
+        return
+      }
+
       const v = subBlock.value
       const hasValue = !(
         v === null ||
