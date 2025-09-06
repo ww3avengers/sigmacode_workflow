@@ -76,6 +76,20 @@ function consolidateCanonicalParams(
     const advancedVal = advancedIds
       .map((id) => consolidated[id])
       .find((v) => v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0))
+
+    // Debug logging for Teams chat issue
+    if (canonicalKey === 'chatId' || canonicalKey === 'teamId' || canonicalKey === 'channelId') {
+      console.log('Consolidation debug:', {
+        canonicalKey,
+        basicId,
+        advancedIds,
+        basicVal,
+        advancedVal,
+        isAdvancedMode,
+        consolidated,
+      })
+    }
+
     let chosen: any
     if (advancedVal !== undefined && basicVal !== undefined) {
       chosen = isAdvancedMode ? advancedVal : basicVal
