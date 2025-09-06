@@ -303,13 +303,27 @@ export class Serializer {
       return // Tool not found, skip validation
     }
 
-    // Check required user-only parameters for the current tool
+    // Derive effective params using the block's params mapper so advanced/basic fields map correctly
+    let effectiveParams = params
+    try {
+      const mapper = blockConfig.tools?.config?.params
+      if (typeof mapper === 'function') {
+        const mapped = mapper(params)
+        // Prefer mapped values while preserving original ones for display/reference
+        effectiveParams = { ...params, ...mapped }
+      }
+    } catch (error) {
+      // If the mapper throws (e.g., required field missing), surface that error directly
+      throw error
+    }
+
+    // Check required user-only parameters for the current tool against effective params
     const missingFields: string[] = []
 
     // Iterate through the tool's parameters, not the block's subBlocks
     Object.entries(currentTool.params || {}).forEach(([paramId, paramConfig]) => {
       if (paramConfig.required && paramConfig.visibility === 'user-only') {
-        const fieldValue = params[paramId]
+        const fieldValue = effectiveParams[paramId]
         if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
           // Find the corresponding subBlock to get the display title
           const subBlockConfig = blockConfig.subBlocks?.find((sb: any) => sb.id === paramId)
