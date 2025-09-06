@@ -13,12 +13,59 @@ const logger = createLogger('Serializer')
  */
 function shouldIncludeField(subBlockConfig: SubBlockConfig, isAdvancedMode: boolean): boolean {
   const fieldMode = subBlockConfig.mode
-
-  if (fieldMode === 'advanced' && !isAdvancedMode) {
-    return false // Skip advanced-only fields when in basic mode
-  }
-
+  if (fieldMode === 'advanced' && !isAdvancedMode) return false
   return true
+}
+
+function consolidateCanonicalParams(
+  params: Record<string, any>,
+  blockConfig: { subBlocks: SubBlockConfig[] },
+  isAdvancedMode: boolean
+): Record<string, any> {
+  const consolidated: Record<string, any> = { ...params }
+  const canonicalGroups: Record<string, { basic?: string; advanced?: string[] }> = {}
+  blockConfig.subBlocks.forEach((subBlockConfig) => {
+    const key = subBlockConfig.canonicalParamId
+    if (!key) return
+    if (!canonicalGroups[key]) canonicalGroups[key] = { basic: undefined, advanced: [] }
+    if (subBlockConfig.mode === 'advanced') {
+      canonicalGroups[key].advanced!.push(subBlockConfig.id)
+    } else {
+      canonicalGroups[key].basic = subBlockConfig.id
+    }
+  })
+
+  Object.entries(canonicalGroups).forEach(([canonicalKey, group]) => {
+    const basicId = group.basic
+    const advancedIds = group.advanced || []
+    const basicVal = basicId ? consolidated[basicId] : undefined
+    const advancedVal = advancedIds
+      .map((id) => consolidated[id])
+      .find((v) => v !== undefined && v !== null && (typeof v !== 'string' || v.trim().length > 0))
+    let chosen: any
+    if (advancedVal !== undefined && basicVal !== undefined) {
+      chosen = isAdvancedMode ? advancedVal : basicVal
+    } else if (advancedVal !== undefined) {
+      chosen = advancedVal
+    } else if (basicVal !== undefined) {
+      chosen = isAdvancedMode ? undefined : basicVal
+    } else {
+      chosen = undefined
+    }
+
+    const sourceIds = [basicId, ...advancedIds].filter(Boolean) as string[]
+    sourceIds.forEach((id) => {
+      if (id !== canonicalKey) delete consolidated[id]
+    })
+
+    if (chosen !== undefined) {
+      consolidated[canonicalKey] = chosen
+    } else {
+      delete consolidated[canonicalKey]
+    }
+  })
+
+  return consolidated
 }
 
 export class Serializer {
@@ -83,12 +130,6 @@ export class Serializer {
       // no-op: conservative, avoid blocking serialization if blockConfig is unexpected
     }
 
-    // Validate required fields that only users can provide (before execution starts)
-    if (validateRequired) {
-      this.validateRequiredFieldsBeforeExecution(block, blockConfig, params)
-    }
-
-    // Apply block-level params mapper so basic/advanced fields consolidate into effective params
     let finalParams = params
     try {
       const mapper = blockConfig.tools?.config?.params
@@ -96,10 +137,20 @@ export class Serializer {
         finalParams = mapper(params)
       }
     } catch (error) {
+      // If mapper throws during validation, surface the error
+      // Otherwise keep original params for non-validation serialization
       if (validateRequired) {
         throw error
       }
       finalParams = params
+    }
+
+    // Validate required fields AFTER params mapping (uses mapped params)
+    if (validateRequired) {
+      // Skip validation for trigger mode blocks and trigger category blocks
+      if (!(block.triggerMode || blockConfig.category === 'triggers')) {
+        this.validateRequiredFieldsBeforeExecution(block, blockConfig, finalParams)
+      }
     }
 
     let toolId = ''
@@ -236,25 +287,20 @@ export class Serializer {
 
     const params: Record<string, any> = {}
     const isAdvancedMode = block.advancedMode ?? false
-    const isStarterBlock = block.type === 'starter'
 
-    // First collect all current values from subBlocks, filtering by mode
     Object.entries(block.subBlocks).forEach(([id, subBlock]) => {
-      // Find the corresponding subblock config to check its mode
       const subBlockConfig = blockConfig.subBlocks.find((config) => config.id === id)
-
-      // Include field if it matches current mode OR if it's the starter inputFormat with values
-      const hasStarterInputFormatValues =
-        isStarterBlock &&
-        id === 'inputFormat' &&
-        Array.isArray(subBlock.value) &&
-        subBlock.value.length > 0
-
-      if (
-        subBlockConfig &&
-        (shouldIncludeField(subBlockConfig, isAdvancedMode) || hasStarterInputFormatValues)
-      ) {
-        params[id] = subBlock.value
+      if (!subBlockConfig) return
+      const v = subBlock.value
+      const hasValue = !(
+        v === null ||
+        v === undefined ||
+        (typeof v === 'string' && v.trim().length === 0) ||
+        (Array.isArray(v) && v.length === 0) ||
+        (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0)
+      )
+      if (hasValue) {
+        params[id] = v
       }
     })
 
@@ -271,7 +317,7 @@ export class Serializer {
       }
     })
 
-    return params
+    return consolidateCanonicalParams(params, blockConfig, block.advancedMode ?? false)
   }
 
   private validateRequiredFieldsBeforeExecution(
@@ -281,16 +327,7 @@ export class Serializer {
   ) {
     // Validate user-only required fields before execution starts
     // This catches missing API keys, credentials, and other user-provided values early
-    // Fields that are user-or-llm will be validated later after parameter merging
-
-    // Skip validation if the block is in trigger mode
-    if (block.triggerMode || blockConfig.category === 'triggers') {
-      logger.info('Skipping validation for block in trigger mode', {
-        blockId: block.id,
-        blockType: block.type,
-      })
-      return
-    }
+    // Note: params passed here have already been through the mapper
 
     // Get the tool configuration to check parameter visibility
     const toolAccess = blockConfig.tools?.access
@@ -298,7 +335,7 @@ export class Serializer {
       return // No tools to validate against
     }
 
-    // Determine the current tool ID using the same logic as the serializer
+    // Determine the current tool ID using mapped params
     let currentToolId = ''
     try {
       currentToolId = blockConfig.tools.config?.tool
@@ -317,27 +354,13 @@ export class Serializer {
       return // Tool not found, skip validation
     }
 
-    // Derive effective params using the block's params mapper so advanced/basic fields map correctly
-    let effectiveParams = params
-    try {
-      const mapper = blockConfig.tools?.config?.params
-      if (typeof mapper === 'function') {
-        const mapped = mapper(params)
-        // Prefer mapped values while preserving original ones for display/reference
-        effectiveParams = { ...params, ...mapped }
-      }
-    } catch (error) {
-      // If the mapper throws (e.g., required field missing), surface that error directly
-      throw error
-    }
-
-    // Check required user-only parameters for the current tool against effective params
+    // Check required user-only parameters for the current tool
+    // Note: params are already mapped, so we check them directly
     const missingFields: string[] = []
 
-    // Iterate through the tool's parameters, not the block's subBlocks
     Object.entries(currentTool.params || {}).forEach(([paramId, paramConfig]) => {
       if (paramConfig.required && paramConfig.visibility === 'user-only') {
-        const fieldValue = effectiveParams[paramId]
+        const fieldValue = params[paramId]
         if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
           // Find the corresponding subBlock to get the display title
           const subBlockConfig = blockConfig.subBlocks?.find((sb: any) => sb.id === paramId)
