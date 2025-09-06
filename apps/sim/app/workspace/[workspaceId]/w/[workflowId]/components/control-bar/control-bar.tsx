@@ -258,6 +258,7 @@ export function ControlBar({ hasValidationErrors = false }: ControlBarProps) {
 
   // Get current store state for change detection
   const currentBlocks = useWorkflowStore((state) => state.blocks)
+  const currentEdges = useWorkflowStore((state) => state.edges)
   const subBlockValues = useSubBlockStore((state) =>
     activeWorkflowId ? state.workflowValues[activeWorkflowId] : null
   )
@@ -291,7 +292,14 @@ export function ControlBar({ hasValidationErrors = false }: ControlBarProps) {
     }
 
     checkForChanges()
-  }, [activeWorkflowId, deployedState, currentBlocks, subBlockValues, isLoadingDeployedState])
+  }, [
+    activeWorkflowId,
+    deployedState,
+    currentBlocks,
+    currentEdges,
+    subBlockValues,
+    isLoadingDeployedState,
+  ])
 
   useEffect(() => {
     if (session?.user?.id && !isRegistryLoading) {

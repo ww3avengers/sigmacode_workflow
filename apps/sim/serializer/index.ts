@@ -407,7 +407,16 @@ export class Serializer {
         const fieldValue = params[paramId]
         if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
           // Find the corresponding subBlock to get the display title
+          // BUT also check if this subBlock has a condition that excludes it from the current operation
           const subBlockConfig = blockConfig.subBlocks?.find((sb: any) => sb.id === paramId)
+
+          // If the subBlock has a condition that doesn't match current params, skip validation
+          if (subBlockConfig?.condition) {
+            if (!doesConditionMatch(subBlockConfig.condition, params)) {
+              return // This field is not relevant for the current operation
+            }
+          }
+
           const displayName = subBlockConfig?.title || paramId
           missingFields.push(displayName)
         }
