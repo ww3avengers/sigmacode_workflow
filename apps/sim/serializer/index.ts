@@ -344,6 +344,19 @@ export class Serializer {
       const subBlockConfig = blockConfig.subBlocks.find((config) => config.id === id)
       if (!subBlockConfig) return
 
+      // Debug logging for Teams issue
+      if (id === 'chatId' || id === 'manualChatId' || id === 'teamId' || id === 'channelId') {
+        console.log('ExtractParams processing:', {
+          id,
+          value: subBlock.value,
+          condition: subBlockConfig.condition,
+          currentParams: params,
+          conditionMatch: subBlockConfig.condition
+            ? doesConditionMatch(subBlockConfig.condition, params)
+            : 'no condition',
+        })
+      }
+
       // Respect conditional visibility: if condition exists and doesn't match current params, skip
       if (subBlockConfig.condition && !doesConditionMatch(subBlockConfig.condition, params)) {
         return
