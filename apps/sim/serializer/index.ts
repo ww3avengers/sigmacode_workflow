@@ -88,6 +88,20 @@ export class Serializer {
       this.validateRequiredFieldsBeforeExecution(block, blockConfig, params)
     }
 
+    // Apply block-level params mapper so basic/advanced fields consolidate into effective params
+    let finalParams = params
+    try {
+      const mapper = blockConfig.tools?.config?.params
+      if (typeof mapper === 'function') {
+        finalParams = mapper(params)
+      }
+    } catch (error) {
+      if (validateRequired) {
+        throw error
+      }
+      finalParams = params
+    }
+
     let toolId = ''
 
     if (block.type === 'agent' && params.tools) {
@@ -103,7 +117,7 @@ export class Serializer {
         if (nonCustomTools.length > 0) {
           try {
             toolId = blockConfig.tools.config?.tool
-              ? blockConfig.tools.config.tool(params)
+              ? blockConfig.tools.config.tool(finalParams)
               : blockConfig.tools.access[0]
           } catch (error) {
             logger.warn('Tool selection failed during serialization, using default:', {
@@ -121,7 +135,7 @@ export class Serializer {
       // For non-agent blocks, get tool ID from block config as usual
       try {
         toolId = blockConfig.tools.config?.tool
-          ? blockConfig.tools.config.tool(params)
+          ? blockConfig.tools.config.tool(finalParams)
           : blockConfig.tools.access[0]
       } catch (error) {
         logger.warn('Tool selection failed during serialization, using default:', {
@@ -144,7 +158,7 @@ export class Serializer {
       position: block.position,
       config: {
         tool: toolId,
-        params,
+        params: finalParams,
       },
       inputs,
       outputs: {
