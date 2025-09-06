@@ -514,8 +514,6 @@ export function SocketProvider({ children, user }: SocketProviderProps) {
       `URL workflow changed from ${currentWorkflowId} to ${urlWorkflowId}, switching rooms`
     )
 
-    // No-op: client no longer uses debounced updates for subblocks/variables
-
     // Leave current workflow first if we're in one
     if (currentWorkflowId) {
       logger.info(`Leaving current workflow ${currentWorkflowId} before joining ${urlWorkflowId}`)
