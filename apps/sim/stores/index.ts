@@ -93,10 +93,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent): void {
     }
   }
 
-  try {
-    const { useOperationQueueStore } = require('@/stores/operation-queue/store')
-    useOperationQueueStore.getState().flushAllDebounced()
-  } catch {}
+  // No-op: client no longer uses debounced updates
 
   // Standard beforeunload pattern
   event.preventDefault()
