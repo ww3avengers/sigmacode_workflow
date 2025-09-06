@@ -7,14 +7,13 @@ export interface General {
   telemetryEnabled: boolean
   isLoading: boolean
   error: string | null
-  // Individual loading states for optimistic updates
   isAutoConnectLoading: boolean
   isAutoPanLoading: boolean
   isConsoleExpandedByDefaultLoading: boolean
   isThemeLoading: boolean
   isTelemetryLoading: boolean
-  // expose billing usage notifications toggle state (optional, read from backend)
-  // We keep it implicit; actions handle setting it via settings.general
+  isBillingUsageNotificationsLoading: boolean
+  isBillingUsageNotificationsEnabled: boolean
 }
 
 export interface GeneralActions {
@@ -38,5 +37,5 @@ export type UserSettings = {
   autoPan: boolean
   consoleExpandedByDefault: boolean
   telemetryEnabled: boolean
-  billingUsageNotificationsEnabled: boolean
+  isBillingUsageNotificationsEnabled: boolean
 }

@@ -182,7 +182,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
       throw new Error(`Workflow log not found for execution ${executionId}`)
     }
 
-    // Compute threshold crossing before updating stats, then update, then notify (best-effort)
     try {
       const [wf] = await db.select().from(workflow).where(eq(workflow.id, updatedLog.workflowId))
       if (wf) {
@@ -195,7 +194,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
         if (usr?.email) {
           const sub = await getHighestPrioritySubscription(usr.id)
 
-          // Calculate cost delta to apply
           const costMultiplier = getCostMultiplier()
           const costDelta =
             (costSummary.baseExecutionCharge || 0) + (costSummary.modelCost || 0) * costMultiplier
@@ -207,7 +205,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
           if (scope === 'user') {
             const before = await checkUsageStatus(usr.id)
 
-            // Update stats
             await this.updateUserStats(
               updatedLog.workflowId,
               costSummary,
@@ -232,8 +229,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
               limit,
             })
           } else if (sub?.referenceId) {
-            // Org scope: compute org usage before update, then apply delta for after
-            // Get org limit (max of configured and minimum by seats * base price)
             let orgLimit = 0
             const orgRows = await db
               .select({ orgUsageLimit: organization.orgUsageLimit })
@@ -250,7 +245,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
               orgLimit = minimum
             }
 
-            // Sum org usage before update
             const [{ sum: orgUsageBefore }] = await db
               .select({ sum: sql`COALESCE(SUM(${userStats.currentPeriodCost}), 0)` })
               .from(member)
@@ -261,7 +255,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
               (orgUsageBefore as any)?.toString?.() || '0'
             )
 
-            // Update stats
             await this.updateUserStats(
               updatedLog.workflowId,
               costSummary,
@@ -287,7 +280,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
             })
           }
         } else {
-          // Update stats if no email available for the user
           await this.updateUserStats(
             updatedLog.workflowId,
             costSummary,
@@ -295,7 +287,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
           )
         }
       } else {
-        // Update stats if no workflow found (should not happen)
         await this.updateUserStats(
           updatedLog.workflowId,
           costSummary,
@@ -303,7 +294,6 @@ export class ExecutionLogger implements IExecutionLoggerService {
         )
       }
     } catch (e) {
-      // Fallback: ensure stats updated in case of any error
       try {
         await this.updateUserStats(
           updatedLog.workflowId,

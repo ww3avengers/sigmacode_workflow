@@ -18,9 +18,6 @@ import { getBrandConfig } from '@/lib/branding/branding'
 import { env } from '@/lib/env'
 import { getAssetUrl } from '@/lib/utils'
 
-/**
- * Props for usage-threshold email template.
- */
 interface UsageThresholdEmailProps {
   userName?: string
   planName: string
@@ -31,10 +28,6 @@ interface UsageThresholdEmailProps {
   updatedDate?: Date
 }
 
-/**
- * Usage threshold email at 80%.
- * Reuses baseStyles and EmailFooter to match the existing email styling.
- */
 export function UsageThresholdEmail({
   userName,
   planName,

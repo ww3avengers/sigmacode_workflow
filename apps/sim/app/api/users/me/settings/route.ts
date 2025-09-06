@@ -70,7 +70,7 @@ export async function GET() {
           consoleExpandedByDefault: userSettings.consoleExpandedByDefault,
           telemetryEnabled: userSettings.telemetryEnabled,
           emailPreferences: userSettings.emailPreferences ?? {},
-          billingUsageNotificationsEnabled: userSettings.billingUsageNotificationsEnabled,
+          billingUsageNotificationsEnabled: userSettings.billingUsageNotificationsEnabled ?? true,
         },
       },
       { status: 200 }

@@ -16,9 +16,6 @@ import { getBrandConfig } from '@/lib/branding/branding'
 import { env } from '@/lib/env'
 import { getAssetUrl } from '@/lib/utils'
 
-/**
- * Props for plan welcome email template.
- */
 interface PlanWelcomeEmailProps {
   planName: 'Pro' | 'Team'
   userName?: string
@@ -26,10 +23,6 @@ interface PlanWelcomeEmailProps {
   createdDate?: Date
 }
 
-/**
- * Plan welcome email reused for Pro and Team.
- * Reuses baseStyles and EmailFooter for styling consistency.
- */
 export function PlanWelcomeEmail({
   planName,
   userName,

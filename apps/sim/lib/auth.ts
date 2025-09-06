@@ -18,7 +18,6 @@ import {
   renderInvitationEmail,
   renderOTPEmail,
   renderPasswordResetEmail,
-  renderPlanWelcomeEmail,
 } from '@/components/emails/render-email'
 import { getBaseURL } from '@/lib/auth-client'
 import { authorizeSubscriptionReference } from '@/lib/billing/authorization'
@@ -1233,32 +1232,8 @@ export const auth = betterAuth({
 
                 // Send welcome email for Pro and Team plans
                 try {
-                  const subPlan = subscription.plan
-                  if (subPlan === 'pro' || subPlan === 'team') {
-                    const userId = subscription.referenceId
-                    const users = await db
-                      .select({ email: schema.user.email, name: schema.user.name })
-                      .from(schema.user)
-                      .where(eq(schema.user.id, userId))
-                      .limit(1)
-
-                    if (users.length > 0 && users[0].email) {
-                      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sim.ai'
-                      const html = await renderPlanWelcomeEmail({
-                        planName: subPlan === 'pro' ? 'Pro' : 'Team',
-                        userName: users[0].name || undefined,
-                        loginLink: `${baseUrl}/login`,
-                      })
-                      await sendEmail({
-                        to: users[0].email,
-                        subject: getEmailSubject(
-                          subPlan === 'pro' ? 'plan-welcome-pro' : 'plan-welcome-team'
-                        ),
-                        html,
-                        emailType: 'updates',
-                      })
-                    }
-                  }
+                  const { sendPlanWelcomeEmail } = await import('@/lib/billing')
+                  await sendPlanWelcomeEmail(subscription)
                 } catch (error) {
                   logger.error('[onSubscriptionComplete] Failed to send plan welcome email', {
                     error,

@@ -547,11 +547,9 @@ export async function maybeSendUsageThresholdEmail(params: {
   planName: string
   percentBefore: number
   percentAfter: number
-  // For user scope
   userId?: string
   userEmail?: string
   userName?: string
-  // For organization scope
   organizationId?: string
   currentUsageAfter: number
   limit: number
@@ -586,7 +584,6 @@ export async function maybeSendUsageThresholdEmail(params: {
     }
 
     if (params.scope === 'user' && params.userId && params.userEmail) {
-      // Check user toggle
       const rows = await db
         .select({ enabled: settings.billingUsageNotificationsEnabled })
         .from(settings)
@@ -595,7 +592,6 @@ export async function maybeSendUsageThresholdEmail(params: {
       if (rows.length > 0 && rows[0].enabled === false) return
       await sendTo(params.userEmail, params.userName)
     } else if (params.scope === 'organization' && params.organizationId) {
-      // Notify owners/admins with notifications enabled
       const admins = await db
         .select({
           email: user.email,
