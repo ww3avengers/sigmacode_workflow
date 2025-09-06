@@ -417,6 +417,10 @@ export class Serializer {
             }
           }
 
+          if (!subBlockConfig) {
+            return
+          }
+
           const displayName = subBlockConfig?.title || paramId
           missingFields.push(displayName)
         }
