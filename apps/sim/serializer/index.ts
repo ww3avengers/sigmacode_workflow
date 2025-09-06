@@ -238,14 +238,7 @@ export class Serializer {
     const isAdvancedMode = block.advancedMode ?? false
     const isStarterBlock = block.type === 'starter'
 
-    // Helper to determine whether an input was provided (non-empty string or any non-null value)
-    const isProvidedInput = (val: any): boolean => {
-      if (val === null || val === undefined) return false
-      if (typeof val === 'string') return val.trim().length > 0
-      return true
-    }
-
-    // First collect all current values from subBlocks, filtering by mode but preserving any meaningful values
+    // First collect all current values from subBlocks, filtering by mode
     Object.entries(block.subBlocks).forEach(([id, subBlock]) => {
       // Find the corresponding subblock config to check its mode
       const subBlockConfig = blockConfig.subBlocks.find((config) => config.id === id)
@@ -259,9 +252,7 @@ export class Serializer {
 
       if (
         subBlockConfig &&
-        (shouldIncludeField(subBlockConfig, isAdvancedMode) ||
-          hasStarterInputFormatValues ||
-          isProvidedInput(subBlock.value))
+        (shouldIncludeField(subBlockConfig, isAdvancedMode) || hasStarterInputFormatValues)
       ) {
         params[id] = subBlock.value
       }
