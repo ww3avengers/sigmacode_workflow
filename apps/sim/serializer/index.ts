@@ -130,25 +130,29 @@ export class Serializer {
       // no-op: conservative, avoid blocking serialization if blockConfig is unexpected
     }
 
+    // Run params mapper only for non-trigger blocks. Trigger-mode blocks skip mapper.
     let finalParams = params
-    try {
-      const mapper = blockConfig.tools?.config?.params
-      if (typeof mapper === 'function') {
-        finalParams = mapper(params)
+    const isTriggerBlock = !!(block.triggerMode || blockConfig.category === 'triggers')
+    if (!isTriggerBlock) {
+      try {
+        const mapper = blockConfig.tools?.config?.params
+        if (typeof mapper === 'function') {
+          finalParams = mapper(params)
+        }
+      } catch (error) {
+        // If mapper throws during validation, surface the error
+        // Otherwise keep original params for non-validation serialization
+        if (validateRequired) {
+          throw error
+        }
+        finalParams = params
       }
-    } catch (error) {
-      // If mapper throws during validation, surface the error
-      // Otherwise keep original params for non-validation serialization
-      if (validateRequired) {
-        throw error
-      }
-      finalParams = params
     }
 
     // Validate required fields AFTER params mapping (uses mapped params)
     if (validateRequired) {
       // Skip validation for trigger mode blocks and trigger category blocks
-      if (!(block.triggerMode || blockConfig.category === 'triggers')) {
+      if (!isTriggerBlock) {
         this.validateRequiredFieldsBeforeExecution(block, blockConfig, finalParams)
       }
     }
