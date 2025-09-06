@@ -229,11 +229,22 @@ export const GoogleCalendarBlock: BlockConfig<GoogleCalendarResponse> = {
         }
       },
       params: (params) => {
-        const { credential, operation, attendees, replaceExisting, calendarId, ...rest } = params
+        const {
+          credential,
+          operation,
+          attendees,
+          replaceExisting,
+          calendarId,
+          manualCalendarId,
+          ...rest
+        } = params
+
+        // Handle calendar ID (selector or manual)
+        const effectiveCalendarId = (calendarId || manualCalendarId || '').trim()
 
         const processedParams: Record<string, any> = {
           ...rest,
-          calendarId: calendarId?.trim() || 'primary',
+          calendarId: effectiveCalendarId || 'primary',
         }
 
         // Convert comma-separated attendees string to array, only if it has content

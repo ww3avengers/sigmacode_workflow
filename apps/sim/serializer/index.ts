@@ -402,26 +402,25 @@ export class Serializer {
     // Note: params are already mapped, so we check them directly
     const missingFields: string[] = []
 
+    // Check required user-only parameters from the tool definition
     Object.entries(currentTool.params || {}).forEach(([paramId, paramConfig]) => {
       if (paramConfig.required && paramConfig.visibility === 'user-only') {
+        // Check if there's a corresponding visible subBlock for this param
+        const subBlockConfig = blockConfig.subBlocks?.find((sb: any) => sb.id === paramId)
+
+        // Skip if the subBlock has a condition that doesn't match current params
+        if (subBlockConfig?.condition && !doesConditionMatch(subBlockConfig.condition, params)) {
+          return // This field is not relevant for the current operation
+        }
+
+        // Skip if there's no corresponding subBlock (not a user-supplied field)
+        if (!subBlockConfig) {
+          return
+        }
+
         const fieldValue = params[paramId]
         if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
-          // Find the corresponding subBlock to get the display title
-          // BUT also check if this subBlock has a condition that excludes it from the current operation
-          const subBlockConfig = blockConfig.subBlocks?.find((sb: any) => sb.id === paramId)
-
-          // If the subBlock has a condition that doesn't match current params, skip validation
-          if (subBlockConfig?.condition) {
-            if (!doesConditionMatch(subBlockConfig.condition, params)) {
-              return // This field is not relevant for the current operation
-            }
-          }
-
-          if (!subBlockConfig) {
-            return
-          }
-
-          const displayName = subBlockConfig?.title || paramId
+          const displayName = subBlockConfig.title || paramId
           missingFields.push(displayName)
         }
       }

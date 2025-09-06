@@ -181,7 +181,12 @@ export const WealthboxBlock: BlockConfig<WealthboxResponse> = {
         }
       },
       params: (params) => {
-        const { credential, operation, contactId, taskId, ...rest } = params
+        const { credential, operation, contactId, manualContactId, taskId, manualTaskId, ...rest } =
+          params
+
+        // Handle both selector and manual inputs
+        const effectiveContactId = (contactId || manualContactId || '').trim()
+        const effectiveTaskId = (taskId || manualTaskId || '').trim()
 
         const baseParams = {
           ...rest,
@@ -192,16 +197,16 @@ export const WealthboxBlock: BlockConfig<WealthboxResponse> = {
           return {
             ...baseParams,
             noteId: params.noteId,
-            contactId: contactId?.trim(),
+            contactId: effectiveContactId,
           }
         }
         if (operation === 'read_contact') {
-          if (!contactId?.trim()) {
+          if (!effectiveContactId) {
             throw new Error('Contact ID is required for contact operations')
           }
           return {
             ...baseParams,
-            contactId: contactId.trim(),
+            contactId: effectiveContactId,
           }
         }
         if (operation === 'read_task') {

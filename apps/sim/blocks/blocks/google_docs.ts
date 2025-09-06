@@ -140,12 +140,17 @@ export const GoogleDocsBlock: BlockConfig<GoogleDocsResponse> = {
         }
       },
       params: (params) => {
-        const { credential, documentId, folderId, ...rest } = params
+        const { credential, documentId, manualDocumentId, folderSelector, folderId, ...rest } =
+          params
+
+        // Handle both selector and manual inputs
+        const effectiveDocumentId = (documentId || manualDocumentId || '').trim()
+        const effectiveFolderId = (folderSelector || folderId || '').trim()
 
         return {
           ...rest,
-          documentId: documentId?.trim(),
-          folderId: folderId?.trim(),
+          documentId: effectiveDocumentId || undefined,
+          folderId: effectiveFolderId || undefined,
           credential,
         }
       },

@@ -141,7 +141,11 @@ export const JiraBlock: BlockConfig<JiraResponse> = {
         }
       },
       params: (params) => {
-        const { credential, projectId, issueKey, ...rest } = params
+        const { credential, projectId, manualProjectId, issueKey, manualIssueKey, ...rest } = params
+
+        // Use the selected IDs or the manually entered ones
+        const effectiveProjectId = (projectId || manualProjectId || '').trim()
+        const effectiveIssueKey = (issueKey || manualIssueKey || '').trim()
 
         const baseParams = {
           credential,
@@ -150,13 +154,13 @@ export const JiraBlock: BlockConfig<JiraResponse> = {
 
         switch (params.operation) {
           case 'write': {
-            if (!projectId?.trim()) {
+            if (!effectiveProjectId) {
               throw new Error(
                 'Project ID is required. Please select a project or enter a project ID manually.'
               )
             }
             const writeParams = {
-              projectId: projectId.trim(),
+              projectId: effectiveProjectId,
               summary: params.summary || '',
               description: params.description || '',
               issueType: params.issueType || 'Task',
@@ -168,19 +172,19 @@ export const JiraBlock: BlockConfig<JiraResponse> = {
             }
           }
           case 'update': {
-            if (!projectId?.trim()) {
+            if (!effectiveProjectId) {
               throw new Error(
                 'Project ID is required. Please select a project or enter a project ID manually.'
               )
             }
-            if (!issueKey?.trim()) {
+            if (!effectiveIssueKey) {
               throw new Error(
                 'Issue Key is required. Please select an issue or enter an issue key manually.'
               )
             }
             const updateParams = {
-              projectId: projectId.trim(),
-              issueKey: issueKey.trim(),
+              projectId: effectiveProjectId,
+              issueKey: effectiveIssueKey,
               summary: params.summary || '',
               description: params.description || '',
             }
@@ -190,25 +194,25 @@ export const JiraBlock: BlockConfig<JiraResponse> = {
             }
           }
           case 'read': {
-            if (!issueKey?.trim()) {
+            if (!effectiveIssueKey) {
               throw new Error(
                 'Issue Key is required. Please select an issue or enter an issue key manually.'
               )
             }
             return {
               ...baseParams,
-              issueKey: issueKey.trim(),
+              issueKey: effectiveIssueKey,
             }
           }
           case 'read-bulk': {
-            if (!projectId?.trim()) {
+            if (!effectiveProjectId) {
               throw new Error(
                 'Project ID is required. Please select a project or enter a project ID manually.'
               )
             }
             return {
               ...baseParams,
-              projectId: projectId.trim(),
+              projectId: effectiveProjectId,
             }
           }
           default:

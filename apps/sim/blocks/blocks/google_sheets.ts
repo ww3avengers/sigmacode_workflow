@@ -174,17 +174,20 @@ export const GoogleSheetsBlock: BlockConfig<GoogleSheetsResponse> = {
         }
       },
       params: (params) => {
-        const { credential, values, spreadsheetId, ...rest } = params
+        const { credential, values, spreadsheetId, manualSpreadsheetId, ...rest } = params
 
         const parsedValues = values ? JSON.parse(values as string) : undefined
 
-        if (!spreadsheetId || !String(spreadsheetId).trim()) {
+        // Handle both selector and manual input
+        const effectiveSpreadsheetId = (spreadsheetId || manualSpreadsheetId || '').trim()
+
+        if (!effectiveSpreadsheetId) {
           throw new Error('Spreadsheet ID is required.')
         }
 
         return {
           ...rest,
-          spreadsheetId: String(spreadsheetId).trim(),
+          spreadsheetId: effectiveSpreadsheetId,
           values: parsedValues,
           credential,
         }

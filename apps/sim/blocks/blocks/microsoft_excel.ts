@@ -146,7 +146,11 @@ export const MicrosoftExcelBlock: BlockConfig<MicrosoftExcelResponse> = {
         }
       },
       params: (params) => {
-        const { credential, values, spreadsheetId, tableName, ...rest } = params
+        const { credential, values, spreadsheetId, manualSpreadsheetId, tableName, ...rest } =
+          params
+
+        // Handle both selector and manual input
+        const effectiveSpreadsheetId = (spreadsheetId || manualSpreadsheetId || '').trim()
 
         // Parse values from JSON string to array if it exists
         let parsedValues
@@ -156,7 +160,7 @@ export const MicrosoftExcelBlock: BlockConfig<MicrosoftExcelResponse> = {
           throw new Error('Invalid JSON format for values')
         }
 
-        if (!spreadsheetId || !String(spreadsheetId).trim()) {
+        if (!effectiveSpreadsheetId) {
           throw new Error('Spreadsheet ID is required.')
         }
 
@@ -167,7 +171,7 @@ export const MicrosoftExcelBlock: BlockConfig<MicrosoftExcelResponse> = {
 
         const baseParams = {
           ...rest,
-          spreadsheetId: String(spreadsheetId).trim(),
+          spreadsheetId: effectiveSpreadsheetId,
           values: parsedValues,
           credential,
         }

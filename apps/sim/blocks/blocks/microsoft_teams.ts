@@ -166,7 +166,22 @@ export const MicrosoftTeamsBlock: BlockConfig<MicrosoftTeamsResponse> = {
         }
       },
       params: (params) => {
-        const { credential, operation, teamId, chatId, channelId, ...rest } = params
+        const {
+          credential,
+          operation,
+          teamId,
+          manualTeamId,
+          chatId,
+          manualChatId,
+          channelId,
+          manualChannelId,
+          ...rest
+        } = params
+
+        // Use the selected IDs or the manually entered ones
+        const effectiveTeamId = (teamId || manualTeamId || '').trim()
+        const effectiveChatId = (chatId || manualChatId || '').trim()
+        const effectiveChannelId = (channelId || manualChannelId || '').trim()
 
         const baseParams = {
           ...rest,
@@ -174,20 +189,20 @@ export const MicrosoftTeamsBlock: BlockConfig<MicrosoftTeamsResponse> = {
         }
 
         if (operation === 'read_chat' || operation === 'write_chat') {
-          if (!chatId?.trim()) {
+          if (!effectiveChatId) {
             throw new Error('Chat ID is required for chat operations.')
           }
-          return { ...baseParams, chatId: chatId.trim() }
+          return { ...baseParams, chatId: effectiveChatId }
         }
 
         if (operation === 'read_channel' || operation === 'write_channel') {
-          if (!teamId?.trim()) {
+          if (!effectiveTeamId) {
             throw new Error('Team ID is required for channel operations.')
           }
-          if (!channelId?.trim()) {
+          if (!effectiveChannelId) {
             throw new Error('Channel ID is required for channel operations.')
           }
-          return { ...baseParams, teamId: teamId.trim(), channelId: channelId.trim() }
+          return { ...baseParams, teamId: effectiveTeamId, channelId: effectiveChannelId }
         }
 
         return baseParams

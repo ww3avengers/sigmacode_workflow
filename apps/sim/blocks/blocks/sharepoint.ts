@@ -123,11 +123,14 @@ export const SharepointBlock: BlockConfig<SharepointResponse> = {
         }
       },
       params: (params) => {
-        const { credential, siteId, mimeType, ...rest } = params
+        const { credential, siteSelector, manualSiteId, mimeType, ...rest } = params
+
+        // Use siteSelector if provided, otherwise use manualSiteId
+        const effectiveSiteId = (siteSelector || manualSiteId || '').trim()
 
         return {
           credential,
-          siteId: siteId ? String(siteId).trim() : undefined,
+          siteId: effectiveSiteId || undefined,
           pageSize: rest.pageSize ? Number.parseInt(rest.pageSize as string, 10) : undefined,
           mimeType: mimeType,
           ...rest,

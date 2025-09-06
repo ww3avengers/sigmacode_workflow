@@ -102,8 +102,9 @@ export const LinearBlock: BlockConfig<LinearResponse> = {
       tool: (params) =>
         params.operation === 'write' ? 'linear_create_issue' : 'linear_read_issues',
       params: (params) => {
-        const effectiveTeamId = params.teamId?.trim()
-        const effectiveProjectId = params.projectId?.trim()
+        // Handle both selector and manual inputs
+        const effectiveTeamId = (params.teamId || params.manualTeamId || '').trim()
+        const effectiveProjectId = (params.projectId || params.manualProjectId || '').trim()
 
         if (!effectiveTeamId) {
           throw new Error('Team ID is required.')

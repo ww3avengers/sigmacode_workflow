@@ -204,12 +204,15 @@ export const OneDriveBlock: BlockConfig<OneDriveResponse> = {
         }
       },
       params: (params) => {
-        const { credential, folderId, mimeType, ...rest } = params
+        const { credential, folderSelector, manualFolderId, mimeType, ...rest } = params
+
+        // Use folderSelector if provided, otherwise use manualFolderId
+        const effectiveFolderId = (folderSelector || manualFolderId || '').trim()
 
         return {
           credential,
           ...rest,
-          folderId: folderId ? String(folderId).trim() : undefined,
+          folderId: effectiveFolderId || undefined,
           pageSize: rest.pageSize ? Number.parseInt(rest.pageSize as string, 10) : undefined,
           mimeType: mimeType,
         }

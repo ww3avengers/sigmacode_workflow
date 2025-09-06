@@ -186,6 +186,7 @@ export const SlackBlock: BlockConfig<SlackResponse> = {
           botToken,
           operation,
           channel,
+          manualChannel,
           title,
           content,
           limit,
@@ -193,12 +194,15 @@ export const SlackBlock: BlockConfig<SlackResponse> = {
           ...rest
         } = params
 
-        if (!channel?.trim()) {
+        // Handle both selector and manual channel input
+        const effectiveChannel = (channel || manualChannel || '').trim()
+
+        if (!effectiveChannel) {
           throw new Error('Channel is required.')
         }
 
         const baseParams: Record<string, any> = {
-          channel: channel.trim(),
+          channel: effectiveChannel,
         }
 
         // Handle authentication based on method

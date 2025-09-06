@@ -198,9 +198,13 @@ export const OutlookBlock: BlockConfig<OutlookResponse> = {
         }
       },
       params: (params) => {
-        const { credential, folder, ...rest } = params
+        const { credential, folder, manualFolder, ...rest } = params
+
+        // Handle both selector and manual folder input
+        const effectiveFolder = (folder || manualFolder || '').trim()
+
         if (rest.operation === 'read_outlook') {
-          rest.folder = folder?.trim() || 'INBOX'
+          rest.folder = effectiveFolder || 'INBOX'
         }
 
         return {

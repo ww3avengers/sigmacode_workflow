@@ -149,6 +149,7 @@ export const MicrosoftPlannerBlock: BlockConfig<MicrosoftPlannerResponse> = {
           operation,
           planId,
           taskId,
+          manualTaskId,
           title,
           description,
           dueDateTime,
@@ -162,13 +163,16 @@ export const MicrosoftPlannerBlock: BlockConfig<MicrosoftPlannerResponse> = {
           credential,
         }
 
+        // Handle both selector and manual task ID
+        const effectiveTaskId = (taskId || manualTaskId || '').trim()
+
         // For read operations
         if (operation === 'read_task') {
           const readParams: MicrosoftPlannerBlockParams = { ...baseParams }
 
           // If taskId is provided, add it (highest priority - get specific task)
-          if (taskId?.trim()) {
-            readParams.taskId = taskId.trim()
+          if (effectiveTaskId) {
+            readParams.taskId = effectiveTaskId
           }
           // If no taskId but planId is provided, add planId (get tasks from plan)
           else if (planId?.trim()) {

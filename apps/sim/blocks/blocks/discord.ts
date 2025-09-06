@@ -143,42 +143,44 @@ export const DiscordBlock: BlockConfig<DiscordResponse> = {
         if (!params.botToken) throw new Error('Bot token required for this operation')
         commonParams.botToken = params.botToken
 
-        const { serverId, channelId } = params
+        // Handle both selector and manual inputs
+        const serverId = (params.serverId || params.manualServerId || '').trim()
+        const channelId = (params.channelId || params.manualChannelId || '').trim()
 
         switch (params.operation) {
           case 'discord_send_message':
-            if (!serverId?.trim()) {
+            if (!serverId) {
               throw new Error('Server ID is required.')
             }
-            if (!channelId?.trim()) {
+            if (!channelId) {
               throw new Error('Channel ID is required.')
             }
             return {
               ...commonParams,
-              serverId: serverId.trim(),
-              channelId: channelId.trim(),
+              serverId,
+              channelId,
               content: params.content,
             }
           case 'discord_get_messages':
-            if (!serverId?.trim()) {
+            if (!serverId) {
               throw new Error('Server ID is required.')
             }
-            if (!channelId?.trim()) {
+            if (!channelId) {
               throw new Error('Channel ID is required.')
             }
             return {
               ...commonParams,
-              serverId: serverId.trim(),
-              channelId: channelId.trim(),
+              serverId,
+              channelId,
               limit: params.limit ? Math.min(Math.max(1, Number(params.limit)), 100) : 10,
             }
           case 'discord_get_server':
-            if (!serverId?.trim()) {
+            if (!serverId) {
               throw new Error('Server ID is required.')
             }
             return {
               ...commonParams,
-              serverId: serverId.trim(),
+              serverId,
             }
           case 'discord_get_user':
             return {

@@ -104,12 +104,13 @@ export const ConfluenceBlock: BlockConfig<ConfluenceResponse> = {
         }
       },
       params: (params) => {
-        const { credential, pageId, ...rest } = params
+        const { credential, pageId, manualPageId, ...rest } = params
 
-        const effectivePageId = pageId?.trim()
+        // Use the selected page ID or the manually entered one
+        const effectivePageId = (pageId || manualPageId || '').trim()
 
         if (!effectivePageId) {
-          throw new Error('Page ID is required.')
+          throw new Error('Page ID is required. Please select a page or enter a page ID manually.')
         }
 
         return {
