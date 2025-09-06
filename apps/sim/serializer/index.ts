@@ -23,6 +23,17 @@ function consolidateCanonicalParams(
   isAdvancedMode: boolean
 ): Record<string, any> {
   const consolidated: Record<string, any> = { ...params }
+
+  // In basic mode, drop standalone advanced-only fields that don't belong to a canonical group
+  if (!isAdvancedMode) {
+    blockConfig.subBlocks.forEach((subBlockConfig) => {
+      const isAdvancedOnly = subBlockConfig.mode === 'advanced'
+      const isPartOfCanonicalGroup = !!subBlockConfig.canonicalParamId
+      if (isAdvancedOnly && !isPartOfCanonicalGroup) {
+        delete consolidated[subBlockConfig.id]
+      }
+    })
+  }
   const canonicalGroups: Record<string, { basic?: string; advanced?: string[] }> = {}
   blockConfig.subBlocks.forEach((subBlockConfig) => {
     const key = subBlockConfig.canonicalParamId
