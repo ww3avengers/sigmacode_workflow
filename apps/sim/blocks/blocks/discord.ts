@@ -40,6 +40,7 @@ export const DiscordBlock: BlockConfig<DiscordResponse> = {
       type: 'short-input',
       layout: 'full',
       placeholder: 'Enter Discord server ID',
+      required: true,
       provider: 'discord',
       serviceId: 'discord',
       condition: {
@@ -54,6 +55,7 @@ export const DiscordBlock: BlockConfig<DiscordResponse> = {
       type: 'short-input',
       layout: 'full',
       placeholder: 'Enter Discord channel ID',
+      required: true,
       provider: 'discord',
       serviceId: 'discord',
       condition: { field: 'operation', value: ['discord_send_message', 'discord_get_messages'] },
