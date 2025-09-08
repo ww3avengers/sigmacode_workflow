@@ -1,12 +1,10 @@
-import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 import { checkHybridAuth } from '@/lib/auth/hybrid'
 import { checkServerSideUsageLimits } from '@/lib/billing'
 import { getHighestPrioritySubscription } from '@/lib/billing/core/subscription'
+import { getEffectiveCurrentPeriodCost } from '@/lib/billing/core/usage'
 import { createLogger } from '@/lib/logs/console/logger'
 import { createErrorResponse } from '@/app/api/workflows/utils'
-import { db } from '@/db'
-import { userStats } from '@/db/schema'
 import { RateLimiter } from '@/services/queue'
 
 const logger = createLogger('UsageLimitsAPI')
@@ -39,20 +37,12 @@ export async function GET(request: NextRequest) {
     ])
 
     // Usage summary (current period cost + limit + plan)
-    const [usageCheck, statsRow] = await Promise.all([
+    const [usageCheck, effectiveCost] = await Promise.all([
       checkServerSideUsageLimits(authenticatedUserId),
-      db
-        .select({ currentPeriodCost: userStats.currentPeriodCost })
-        .from(userStats)
-        .where(eq(userStats.userId, authenticatedUserId))
-        .limit(1),
+      getEffectiveCurrentPeriodCost(authenticatedUserId),
     ])
 
-    const currentPeriodCost = statsRow.length
-      ? Number.parseFloat(statsRow[0].currentPeriodCost?.toString() || '0')
-      : 0
-    const usageLimitRemaining =
-      usageCheck.limit > 0 ? Math.max(0, usageCheck.limit - currentPeriodCost) : 0
+    const currentPeriodCost = effectiveCost
 
     return NextResponse.json({
       success: true,
