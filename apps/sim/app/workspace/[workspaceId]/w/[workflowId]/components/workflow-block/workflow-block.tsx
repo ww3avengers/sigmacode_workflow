@@ -789,7 +789,7 @@ export function WorkflowBlock({ id, data }: NodeProps<WorkflowBlockProps>) {
                     />
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side='top' className='py-2 px-3'>
+                <TooltipContent side='top' className='px-3 py-2'>
                   <span className='text-sm'>
                     {childIsDeployed
                       ? isLoadingChildVersion

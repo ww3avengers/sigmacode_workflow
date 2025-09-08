@@ -596,13 +596,13 @@ export function DeployModal({
                             <thead className='border-b bg-muted/50'>
                               <tr>
                                 <th className='w-10' />
-                                <th className='px-4 py-2 text-left text-xs font-medium text-muted-foreground'>
+                                <th className='px-4 py-2 text-left font-medium text-muted-foreground text-xs'>
                                   Version
                                 </th>
-                                <th className='px-4 py-2 text-left text-xs font-medium text-muted-foreground'>
+                                <th className='px-4 py-2 text-left font-medium text-muted-foreground text-xs'>
                                   Deployed By
                                 </th>
-                                <th className='px-4 py-2 text-left text-xs font-medium text-muted-foreground'>
+                                <th className='px-4 py-2 text-left font-medium text-muted-foreground text-xs'>
                                   Created
                                 </th>
                                 <th className='w-10' />
@@ -614,7 +614,7 @@ export function DeployModal({
                                 .map((v) => (
                                   <tr
                                     key={v.id}
-                                    className='hover:bg-muted/30 transition-colors cursor-pointer'
+                                    className='cursor-pointer transition-colors hover:bg-muted/30'
                                     onClick={() => openVersionPreview(v.version)}
                                   >
                                     <td className='px-4 py-2.5'>
