@@ -1,20 +1,21 @@
 import {
   Body,
-  Button,
+  Column,
   Container,
   Head,
   Hr,
   Html,
   Img,
+  Link,
   Preview,
+  Row,
   Section,
   Text,
 } from '@react-email/components'
-import { baseStyles } from '@/components/emails/base-styles'
 import EmailFooter from '@/components/emails/footer'
 import { getBrandConfig } from '@/lib/branding/branding'
 import { env } from '@/lib/env'
-import { getAssetUrl } from '@/lib/utils'
+import { baseStyles } from './base-styles'
 
 interface PlanWelcomeEmailProps {
   planName: 'Pro' | 'Team'
@@ -41,13 +42,27 @@ export function PlanWelcomeEmail({
       <Preview>{previewText}</Preview>
       <Body style={baseStyles.main}>
         <Container style={baseStyles.container}>
-          <Section style={baseStyles.header}>
-            <Img
-              src={getAssetUrl('logo-sim.svg')}
-              alt={`${brand.name} Logo`}
-              width='80'
-              height='80'
-            />
+          <Section style={{ padding: '30px 0', textAlign: 'center' }}>
+            <Row>
+              <Column style={{ textAlign: 'center' }}>
+                <Img
+                  src={brand.logoUrl || '/logo/reverse/text/medium.png'}
+                  width='114'
+                  alt={brand.name}
+                  style={{
+                    margin: '0 auto',
+                  }}
+                />
+              </Column>
+            </Row>
+          </Section>
+
+          <Section style={baseStyles.sectionsBorders}>
+            <Row>
+              <Column style={baseStyles.sectionBorder} />
+              <Column style={baseStyles.sectionCenter} />
+              <Column style={baseStyles.sectionBorder} />
+            </Row>
           </Section>
 
           <Section style={baseStyles.content}>
@@ -59,15 +74,29 @@ export function PlanWelcomeEmail({
               build, test, and scale your agentic workflows.
             </Text>
 
-            <Button style={baseStyles.button} href={cta} rel='noopener noreferrer'>
-              Open {brand.name}
-            </Button>
+            <Link href={cta} style={{ textDecoration: 'none' }}>
+              <Text style={baseStyles.button}>Open {brand.name}</Text>
+            </Link>
+
+            <Text style={baseStyles.paragraph}>
+              Want to discuss your plan or get personalized help getting started?{' '}
+              <Link href='https://cal.com/waleedlatif/15min' style={baseStyles.link}>
+                Schedule a 15-minute call
+              </Link>{' '}
+              with our team.
+            </Text>
 
             <Hr />
 
             <Text style={baseStyles.paragraph}>
               Need to invite teammates, adjust usage limits, or manage billing? You can do that from
               Settings → Subscription.
+            </Text>
+
+            <Text style={baseStyles.paragraph}>
+              Best regards,
+              <br />
+              The Sim Team
             </Text>
 
             <Text style={{ ...baseStyles.paragraph, fontSize: '12px', color: '#666' }}>
