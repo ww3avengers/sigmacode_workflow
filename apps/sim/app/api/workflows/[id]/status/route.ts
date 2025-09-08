@@ -24,6 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Check if the workflow has meaningful changes that would require redeployment
     let needsRedeployment = false
+
     if (validation.workflow.isDeployed) {
       // Get current state from normalized tables (same logic as deployment API)
       // Load current state from normalized tables using centralized helper
