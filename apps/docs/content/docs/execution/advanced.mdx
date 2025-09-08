@@ -212,3 +212,42 @@ Monitor your usage and billing in Settings → Subscription:
 - **Usage Limits**: Plan limits with visual progress indicators
 - **Billing Details**: Projected charges and minimum commitments
 - **Plan Management**: Upgrade options and billing history
+
+### Programmatic Usage Summary (API)
+
+You can query your current usage summary using your API key. This endpoint returns only the essential fields required for monitoring and alerting.
+
+Endpoint:
+
+```text
+GET /api/users/me/usage-summary
+```
+
+Authentication:
+
+- Include your API key in the `X-API-Key` header.
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "currentPeriodCost": 12.34,
+    "limit": 100,
+    "plan": "pro"
+  }
+}
+```
+
+Example:
+
+```bash
+curl -X GET -H "X-API-Key: YOUR_API_KEY" -H "Content-Type: application/json" https://sim.ai/api/users/me/usage-summary
+```
+
+Notes:
+
+- `currentPeriodCost` reflects usage in the current billing period.
+- `limit` is derived from individual limits (Free/Pro) or pooled organization limits (Team/Enterprise).
+- `plan` is the highest-priority active plan associated with your user.
