@@ -1,8 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, X } from 'lucide-react'
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui'
+import { Loader2, MoreVertical, X } from 'lucide-react'
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui'
 import { getEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logs/console/logger'
 import { cn } from '@/lib/utils'
@@ -89,6 +99,8 @@ export function DeployModal({
   const [previewVersion, setPreviewVersion] = useState<number | null>(null)
   const [previewing, setPreviewing] = useState(false)
   const [previewDeployedState, setPreviewDeployedState] = useState<WorkflowState | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const getInputFormatExample = () => {
     let inputFormatExample = ''
@@ -568,44 +580,134 @@ export function DeployModal({
                   )}
 
                   <div className='mt-6'>
-                    <div className='mb-2 font-medium text-sm'>Deployment versions</div>
-                    <div className='rounded-md border'>
-                      {versionsLoading ? (
-                        <div className='p-3 text-muted-foreground text-sm'>Loading…</div>
-                      ) : versions.length === 0 ? (
-                        <div className='p-3 text-muted-foreground text-sm'>No deployments yet</div>
-                      ) : (
-                        <ul className='divide-y'>
-                          {versions.map((v) => (
-                            <li key={v.id} className='flex items-center justify-between px-3 py-2'>
-                              <button
-                                type='button'
-                                onClick={() => openVersionPreview(v.version)}
-                                className='flex items-center gap-2 text-left hover:opacity-80'
+                    <div className='mb-3 font-medium text-sm'>Deployment Versions</div>
+                    {versionsLoading ? (
+                      <div className='rounded-md border p-4 text-center text-muted-foreground text-sm'>
+                        Loading deployments...
+                      </div>
+                    ) : versions.length === 0 ? (
+                      <div className='rounded-md border p-4 text-center text-muted-foreground text-sm'>
+                        No deployments yet
+                      </div>
+                    ) : (
+                      <>
+                        <div className='overflow-hidden rounded-md border'>
+                          <table className='w-full'>
+                            <thead className='border-b bg-muted/50'>
+                              <tr>
+                                <th className='w-10' />
+                                <th className='px-4 py-2 text-left text-xs font-medium text-muted-foreground'>
+                                  Version
+                                </th>
+                                <th className='px-4 py-2 text-left text-xs font-medium text-muted-foreground'>
+                                  Deployed By
+                                </th>
+                                <th className='px-4 py-2 text-left text-xs font-medium text-muted-foreground'>
+                                  Created
+                                </th>
+                                <th className='w-10' />
+                              </tr>
+                            </thead>
+                            <tbody className='divide-y'>
+                              {versions
+                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                .map((v) => (
+                                  <tr
+                                    key={v.id}
+                                    className='hover:bg-muted/30 transition-colors cursor-pointer'
+                                    onClick={() => openVersionPreview(v.version)}
+                                  >
+                                    <td className='px-4 py-2.5'>
+                                      <div
+                                        className={`h-2 w-2 rounded-full ${
+                                          v.isActive ? 'bg-green-500' : 'bg-muted-foreground/40'
+                                        }`}
+                                        title={v.isActive ? 'Active' : 'Inactive'}
+                                      />
+                                    </td>
+                                    <td className='px-4 py-2.5'>
+                                      <span className='font-medium text-sm'>v{v.version}</span>
+                                    </td>
+                                    <td className='px-4 py-2.5'>
+                                      <span className='text-muted-foreground text-sm'>
+                                        {v.deployedBy || 'Unknown'}
+                                      </span>
+                                    </td>
+                                    <td className='px-4 py-2.5'>
+                                      <span className='text-muted-foreground text-sm'>
+                                        {new Date(v.createdAt).toLocaleDateString()}{' '}
+                                        {new Date(v.createdAt).toLocaleTimeString()}
+                                      </span>
+                                    </td>
+                                    <td
+                                      className='px-4 py-2.5'
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant='ghost'
+                                            size='icon'
+                                            className='h-8 w-8'
+                                            disabled={activatingVersion === v.version}
+                                          >
+                                            <MoreVertical className='h-4 w-4' />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align='end'>
+                                          <DropdownMenuItem
+                                            onClick={() => activateVersion(v.version)}
+                                            disabled={v.isActive || activatingVersion === v.version}
+                                          >
+                                            {v.isActive
+                                              ? 'Active'
+                                              : activatingVersion === v.version
+                                                ? 'Activating...'
+                                                : 'Activate'}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => openVersionPreview(v.version)}
+                                          >
+                                            Inspect
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {versions.length > itemsPerPage && (
+                          <div className='mt-3 flex items-center justify-between'>
+                            <span className='text-muted-foreground text-sm'>
+                              Showing{' '}
+                              {Math.min((currentPage - 1) * itemsPerPage + 1, versions.length)} -{' '}
+                              {Math.min(currentPage * itemsPerPage, versions.length)} of{' '}
+                              {versions.length}
+                            </span>
+                            <div className='flex gap-2'>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                disabled={currentPage === 1}
                               >
-                                <div
-                                  className={`h-2 w-2 rounded-full ${v.isActive ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
-                                />
-                                <div className='text-sm'>v{v.version}</div>
-                                <div className='text-muted-foreground text-xs'>
-                                  {new Date(v.createdAt).toLocaleString()}
-                                </div>
-                              </button>
-                              {!v.isActive && (
-                                <Button
-                                  size='sm'
-                                  variant='outline'
-                                  disabled={activatingVersion === v.version}
-                                  onClick={() => activateVersion(v.version)}
-                                >
-                                  {activatingVersion === v.version ? 'Activating…' : 'Activate'}
-                                </Button>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+                                Previous
+                              </Button>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={currentPage * itemsPerPage >= versions.length}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -810,6 +912,7 @@ export function DeployModal({
           isActivating={activatingVersion === previewVersion}
           selectedVersionLabel={`v${previewVersion}`}
           workflowId={workflowId}
+          isSelectedVersionActive={versions.find((v) => v.version === previewVersion)?.isActive}
         />
       )}
     </Dialog>

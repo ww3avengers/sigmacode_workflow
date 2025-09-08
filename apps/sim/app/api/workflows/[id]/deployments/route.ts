@@ -4,7 +4,7 @@ import { createLogger } from '@/lib/logs/console/logger'
 import { validateWorkflowAccess } from '@/app/api/workflows/middleware'
 import { createErrorResponse, createSuccessResponse } from '@/app/api/workflows/utils'
 import { db } from '@/db'
-import { workflowDeploymentVersion } from '@/db/schema'
+import { user, workflowDeploymentVersion } from '@/db/schema'
 
 const logger = createLogger('WorkflowDeploymentsListAPI')
 
@@ -29,8 +29,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         isActive: workflowDeploymentVersion.isActive,
         createdAt: workflowDeploymentVersion.createdAt,
         createdBy: workflowDeploymentVersion.createdBy,
+        deployedBy: user.name,
       })
       .from(workflowDeploymentVersion)
+      .leftJoin(user, eq(workflowDeploymentVersion.createdBy, user.id))
       .where(eq(workflowDeploymentVersion.workflowId, id))
       .orderBy(desc(workflowDeploymentVersion.version))
 

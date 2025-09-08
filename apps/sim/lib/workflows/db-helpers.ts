@@ -24,6 +24,7 @@ export interface WorkflowDeploymentVersionResponse {
   isActive: boolean
   createdAt: string
   createdBy?: string | null
+  deployedBy?: string | null
 }
 
 export interface NormalizedWorkflowData {
