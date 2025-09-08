@@ -174,6 +174,7 @@ export async function executeWebhookJob(payload: WebhookExecutionPayload) {
           contextExtensions: {
             executionId,
             workspaceId: workspaceId || '',
+            isDeployedContext: true,
           },
         })
 
@@ -286,6 +287,7 @@ export async function executeWebhookJob(payload: WebhookExecutionPayload) {
       contextExtensions: {
         executionId,
         workspaceId: workspaceId || '',
+        isDeployedContext: true,
       },
     })
 

@@ -610,6 +610,7 @@ export async function executeWorkflowForChat(
             target: e.target,
           })),
           onStream,
+          isDeployedContext: true,
         },
       })
 

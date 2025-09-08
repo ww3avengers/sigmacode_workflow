@@ -379,6 +379,7 @@ export async function GET() {
                 contextExtensions: {
                   executionId,
                   workspaceId: workflowRecord.workspaceId || '',
+                  isDeployedContext: true,
                 },
               })
 
