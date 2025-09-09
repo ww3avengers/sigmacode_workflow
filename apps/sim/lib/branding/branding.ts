@@ -25,11 +25,11 @@ export interface BrandConfig {
  * Default brand configuration values
  */
 const defaultConfig: BrandConfig = {
-  name: 'Sim',
+  name: 'SIGMACODE AI Workflow',
   logoUrl: undefined,
   faviconUrl: '/favicon/favicon.ico',
   customCssUrl: undefined,
-  supportEmail: 'help@sim.ai',
+  supportEmail: 'support@sigmacode.ai',
   documentationUrl: undefined,
   termsUrl: undefined,
   privacyUrl: undefined,
