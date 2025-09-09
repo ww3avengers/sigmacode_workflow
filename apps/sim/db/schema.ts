@@ -434,6 +434,68 @@ export const webhook = pgTable(
   }
 )
 
+export const workflowLogWebhook = pgTable(
+  'workflow_log_webhook',
+  {
+    id: text('id').primaryKey(),
+    workflowId: text('workflow_id')
+      .notNull()
+      .references(() => workflow.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    secret: text('secret'),
+    includeFinalOutput: boolean('include_final_output').notNull().default(false),
+    includeTraceSpans: boolean('include_trace_spans').notNull().default(false),
+    includeRateLimits: boolean('include_rate_limits').notNull().default(false),
+    includeUsageData: boolean('include_usage_data').notNull().default(false),
+    levelFilter: text('level_filter')
+      .array()
+      .notNull()
+      .default(sql`ARRAY['info', 'error']::text[]`),
+    triggerFilter: text('trigger_filter')
+      .array()
+      .notNull()
+      .default(sql`ARRAY['api', 'webhook', 'schedule', 'manual', 'chat']::text[]`),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    workflowIdIdx: index('workflow_log_webhook_workflow_id_idx').on(table.workflowId),
+    activeIdx: index('workflow_log_webhook_active_idx').on(table.active),
+  })
+)
+
+export const workflowLogWebhookDelivery = pgTable(
+  'workflow_log_webhook_delivery',
+  {
+    id: text('id').primaryKey(),
+    subscriptionId: text('subscription_id')
+      .notNull()
+      .references(() => workflowLogWebhook.id, { onDelete: 'cascade' }),
+    workflowId: text('workflow_id')
+      .notNull()
+      .references(() => workflow.id, { onDelete: 'cascade' }),
+    executionId: text('execution_id').notNull(),
+    status: text('status').notNull(), // pending, success, failed
+    attempts: integer('attempts').notNull().default(0),
+    lastAttemptAt: timestamp('last_attempt_at'),
+    nextAttemptAt: timestamp('next_attempt_at'),
+    responseStatus: integer('response_status'),
+    responseBody: text('response_body'),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    subscriptionIdIdx: index('workflow_log_webhook_delivery_subscription_id_idx').on(
+      table.subscriptionId
+    ),
+    executionIdIdx: index('workflow_log_webhook_delivery_execution_id_idx').on(table.executionId),
+    statusIdx: index('workflow_log_webhook_delivery_status_idx').on(table.status),
+    nextAttemptIdx: index('workflow_log_webhook_delivery_next_attempt_idx').on(table.nextAttemptAt),
+  })
+)
+
 export const apiKey = pgTable('api_key', {
   id: text('id').primaryKey(),
   userId: text('user_id')
